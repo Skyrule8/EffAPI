@@ -72,7 +72,7 @@ public class SampleResource {
 	@POST
 	@Path("getToken")
 	public Response getToken() {
-		var getToken = mangaDao.getCredentials(userAgent);
+		String getToken = mangaDao.getCredentials(userAgent);
 		if(getToken != null)
 			return Response.status(200)
 					.entity("Here is your token : " + getToken + " ! :)")
