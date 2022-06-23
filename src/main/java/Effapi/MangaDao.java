@@ -119,9 +119,9 @@ public class MangaDao {
         // credentials = username:password
         final String[] values = credentials.split(":", 2);
 
-        var tokens = entityManager.createQuery("select log from Token log", Token.class).getResultList();
+        List<Token> tokens = entityManager.createQuery("select log from Token log", Token.class).getResultList();
 
-        for(var log : tokens)
+        for(Token log : tokens)
         {
             if(Objects.equals(log.getLogin(), values[0]) && Objects.equals(log.getPassword(), values[1])) {
                 if(log.getToken() == null)
@@ -135,8 +135,8 @@ public class MangaDao {
     }
 
     public boolean checkToken(String userAgent) {
-        var tokens = entityManager.createQuery("select log from Token log", Token.class).getResultList();
-        for(var tke : tokens) {
+        List<Token> tokens = entityManager.createQuery("select log from Token log", Token.class).getResultList();
+        for(Token tke : tokens) {
             return Objects.equals(tke.getToken(), userAgent);
         }
         return false;
