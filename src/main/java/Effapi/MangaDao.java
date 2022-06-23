@@ -7,7 +7,7 @@ import javax.annotation.Resource;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.transaction.UserTransaction;
-import javax.ws.rs.HeaderParam;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Level;
@@ -77,7 +77,41 @@ public class MangaDao {
         }
     }
 
-    public boolean getCredentials(String userAgent) {
+    private String createToken(long id){
+        String token = null;
+
+        String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        StringBuilder sb = new StringBuilder();
+        Random random = new Random();
+
+        int length = 7;
+
+        for(int i = 0; i < length; i++) {
+            int index = random.nextInt(alphabet.length());
+            char randomChar = alphabet.charAt(index);
+            sb.append(randomChar);
+        }
+        token  = sb.toString();
+        try {
+            userTransaction.begin();
+            Token tokenEntity = entityManager.find(Token.class, id);
+
+            if(tokenEntity == null)
+                return null;
+
+            tokenEntity.setToken(token);
+
+            entityManager.persist(tokenEntity);
+            userTransaction.commit();
+            return token;
+        }catch (Exception e) {
+            Logger.getGlobal().log(Level.SEVERE, "JPA Error" + e.getMessage());
+            return null;
+        }
+    }
+
+    public String getCredentials(String userAgent) {
+        String token = null;
         String base64Credentials = userAgent.substring("Basic".length()).trim();
         byte[] credDecoded = Base64.getDecoder().decode(base64Credentials);
         String credentials = new String(credDecoded, StandardCharsets.UTF_8);
@@ -85,16 +119,41 @@ public class MangaDao {
         // credentials = username:password
         final String[] values = credentials.split(":", 2);
 
-        var test = entityManager.createQuery("select log from Token log", Token.class).getResultList();
+        var tokens = entityManager.createQuery("select log from Token log", Token.class).getResultList();
 
-        String login = values[0];
-        String password = values[1];
-        if(!Objects.equals(login, test.get(0).Login) || !Objects.equals(test.get(0).Token, password)) {
-            String uuid = UUID.randomUUID().toString();
-            System.out.println("uuid = " + uuid);
-            return false;
+        for(var log : tokens)
+        {
+            if(Objects.equals(log.getLogin(), values[0]) && Objects.equals(log.getPassword(), values[1])) {
+                if(log.getToken() == null)
+                    return createToken(log.getId());
+                else
+                    return log.getToken();
+            }
         }
 
-        return true;
+        return null;
     }
-}
+
+    public boolean checkToken(String userAgent) {
+        var tokens = entityManager.createQuery("select log from Token log", Token.class).getResultList();
+        for(var tke : tokens) {
+            return Objects.equals(tke.getToken(), userAgent);
+        }
+        return false;
+    }
+
+    public Object createUser(Token token) {
+            try {
+                if(token.getToken() != null)
+                    return false;
+
+                userTransaction.begin();
+                entityManager.persist(token);
+                userTransaction.commit();
+                return true;
+            } catch (Exception e) {
+                Logger.getGlobal().log(Level.SEVERE, "JPA Error" + e.getMessage());
+                return false;
+            }
+        }
+    }

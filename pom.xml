@@ -73,6 +73,16 @@
                 <groupId>org.wildfly.plugins</groupId>
                 <artifactId>wildfly-maven-plugin</artifactId>
                 <version>3.0.0.Final</version>
+                <configuration>
+                    <add-user>
+                        <users>
+                            <user>
+                                <username>admin</username>
+                                <password>admin.1234</password>
+                            </user>
+                        </users>
+                    </add-user>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -81,5 +91,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>
