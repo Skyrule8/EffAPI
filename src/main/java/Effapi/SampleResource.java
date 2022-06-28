@@ -26,23 +26,15 @@ public class SampleResource {
 
 	final GsonBuilder builder = new GsonBuilder();
 	final Gson gson = builder.create();
+	String authorizationHeaderValue = null;
 
 	@GET
+	@Produces(MediaType.APPLICATION_JSON)
 	public Response message() {
-		String getToken = headers.getRequestHeader("Token").get(0);
-		if(mangaDao.checkToken(getToken))
-			return Response.ok(gson.toJson(mangaDao.GetManga())).build();
-		else
-			return Response.status(401).entity("Bad Credentials").build();
-	}
+		authorizationHeaderValue = headers.getRequestHeader("Authorization").get(0).split(" ")[1];
 
-	@PUT
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.TEXT_PLAIN)
-	public Response createCustomer(String manga) {
-		String getToken = headers.getRequestHeader("Token").get(0);
-		if(mangaDao.checkToken(getToken))
-			return Response.ok(mangaDao.addManga(getMangaEntity(manga))).build();
+		if(mangaDao.checkToken(authorizationHeaderValue))
+			return Response.ok().entity(mangaDao.GetManga()).build();
 		else
 			return Response.status(401).entity("Bad Credentials").build();
 	}
@@ -50,9 +42,22 @@ public class SampleResource {
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.TEXT_PLAIN)
+	public Response createCustomer(String manga) {
+		authorizationHeaderValue = headers.getRequestHeader("Authorization").get(0);
+
+		if(mangaDao.checkToken(authorizationHeaderValue))
+			return Response.ok(mangaDao.addManga(getMangaEntity(manga))).build();
+		else
+			return Response.status(401).entity("Bad Credentials").build();
+	}
+
+	@PUT
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.TEXT_PLAIN)
 	public Response updateCustomer(String manga) {
-		String getToken = headers.getRequestHeader("Token").get(0);
-		if(mangaDao.checkToken(getToken))
+		authorizationHeaderValue = headers.getRequestHeader("Authorization").get(0).split(" ")[1];
+
+		if(mangaDao.checkToken(authorizationHeaderValue))
 			return Response.ok(mangaDao.UpdateManga(getMangaEntity(manga))).build();
 		else
 			return Response.status(401).entity("Bad Credentials").build();
@@ -62,8 +67,9 @@ public class SampleResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.TEXT_PLAIN)
 	public Response deleteManga(String manga){
-		String getToken = headers.getRequestHeader("Token").get(0);
-		if(mangaDao.checkToken(getToken))
+		authorizationHeaderValue = headers.getRequestHeader("Authorization").get(0).split(" ")[1];
+
+		if(mangaDao.checkToken(authorizationHeaderValue))
 			return Response.ok(mangaDao.DeleteManga(getMangaEntity(manga))).build();
 		else
 			return Response.status(401).entity("Bad Credentials").build();
@@ -71,11 +77,12 @@ public class SampleResource {
 
 	@POST
 	@Path("getToken")
-	public Response getToken() {
-		String getToken = mangaDao.getCredentials(userAgent);
+	public Response getToken(String user) {
+		String getToken = mangaDao.getCredentials(getTokenEntity(user));
+
 		if(getToken != null)
 			return Response.status(200)
-					.entity("Here is your token : " + getToken + " ! :)")
+					.entity("Here is your token : " + getToken + " ! 😀")
 					.build();
 		else
 			return Response.status(401)
@@ -91,6 +98,23 @@ public class SampleResource {
 		return Response.ok(mangaDao.createUser(getTokenEntity(user))).entity("Utilisateur créé 😀").build();
 	}
 
+	@POST
+	@Path("out")
+	public Response logOut() {
+		authorizationHeaderValue = headers.getRequestHeader("Authorization").get(0).split(" ")[1];
+
+		boolean deleteToken = mangaDao.deleteToken(userAgent, authorizationHeaderValue);
+
+		if(deleteToken && authorizationHeaderValue != null)
+			return Response.status(200)
+					.entity("Le token a bien été supprimé ! 😀 ")
+					.build();
+		else
+			return Response.status(401)
+					.entity("Check your crendentials")
+					.build();
+	}
+
 	public Manga getMangaEntity(String json){
 		Gson gson = new Gson();
 		return gson.fromJson(json, Manga.class);
@@ -100,5 +124,4 @@ public class SampleResource {
 		Gson gson = new Gson();
 		return gson.fromJson(json, Token.class);
 	}
-
 }
